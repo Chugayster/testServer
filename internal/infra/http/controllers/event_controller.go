@@ -60,9 +60,16 @@ func (c *EventController) FindOne() http.HandlerFunc {
 			}
 			return
 		}
-		err = success(w, event)
-		if err != nil {
-			fmt.Printf("EventController.FindOne(): %s", err)
+		if event != nil {
+			err = success(w, event)
+			if err != nil {
+				fmt.Printf("EventController.FindOne(): %s", err)
+			}
+		} else {
+			err = notFound(w)
+			if err != nil {
+				fmt.Printf("EventController.FindOne(): %s", err)
+			}
 		}
 	}
 
