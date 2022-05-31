@@ -37,7 +37,7 @@ func Router(eventController *controllers.EventController) http.Handler {
 
 func AddEventRoutes(router *chi.Router, eventController *controllers.EventController) {
 	(*router).Route("/events", func(apiRouter chi.Router) {
-		apiRouter.Post("/new", eventController.DbCreated())
+		apiRouter.Post("/", eventController.DbCreated())
 		apiRouter.Get("/", eventController.FindAll())
 		apiRouter.Get("/{id}", eventController.FindOne())
 		apiRouter.Put("/{id}", eventController.DbUpdate())	

@@ -8,9 +8,9 @@ import (
 type Repository interface {
 	FindAll() ([]Event, error)
 	FindOne(id int64) (*Event, error)
-	DbUpdate(id int64, event *Event) (*Event, error)
+	DbUpdate(event *Event) (*Event, error)
 	DbCreated(event *Event) (*Event, error)
-	DbDelete(id int64) (bool, error)
+	DbDelete(id int64) error
 }
 
 const EventsCount int64 = 10
@@ -29,70 +29,62 @@ func (r *repository) FindAll() ([]Event, error) {
 	s = s.OrderBy("id")
 	err := s.All(&events)
 	if err != nil {
-		log.Fatal("allparty.Find", err)
+		log.Println("allparty.Find", err)
+		return nil, err
 	}
-	return events, err
+	return events, nil
 }
 
 func (r *repository) FindOne(id int64) (*Event, error) {
 	var event Event
-	allevents := r.ses.Collection("events")
-
-
-		s := allevents.Find(id)
-		err := s.One(&event)
-		if err != nil {
-			log.Println("Find One", err)
-			return nil, nil
-		}
-		return &event, nil
-		
+	allevents := r.ses.Collection("events").Find(id)
+	err := allevents.One(&event)
+	if err != nil {
+		log.Println("Find One", err)
+		return nil, err
+	}
+	return &event, nil
 
 }
 
-func (r *repository) DbUpdate(id int64, updateEvent *Event) (*Event, error) {
+func (r *repository) DbUpdate(updateEvent *Event) (*Event, error) {
 	var event Event
-	allevents := r.ses.Collection("events")
-	s := allevents.Find(id)
+	s := r.ses.Collection("events").Find(updateEvent.Id)
 	err := s.One(&event)
 	if err != nil {
 		log.Println("Find One", err)
-		return nil, nil
+		return nil, err
 	}
-	if updateEvent.Name != "" {
-		event.Name = updateEvent.Name
-	}
-	if updateEvent.Location != "" {
-		event.Location = updateEvent.Location
-	}
+	event.Name = updateEvent.Name
+	event.Location = updateEvent.Location
 	if err := s.Update(event); err != nil {
 		log.Printf("Update: %v\n", err)
+		return nil, err
 	}
 	return &event, nil
 
 }
 
 func (r *repository) DbCreated(event *Event) (*Event, error) {
-	allevents := r.ses.Collection("events")
-	err := allevents.InsertReturning(event)
+	err := r.ses.Collection("events").InsertReturning(event)
 	if err != nil {
 		log.Println("InsertReturning: ", err)
+		return nil, err
 	}
 	return event, nil
 }
 
-func (r *repository) DbDelete(id int64) (bool, error) {
+func (r *repository) DbDelete(id int64) error {
 	var event Event
-	allevents := r.ses.Collection("events")
-	s := allevents.Find(id)
+	s := r.ses.Collection("events").Find(id)
 	err := s.One(&event)
 	if err != nil {
 		log.Println("Find One", err)
-		return false, nil
+		return err
 	}
-
 	if err := s.Delete(); err != nil {
-		log.Printf("Update: %v\n", err)
+		log.Println("Delete: ", err)
+		return err
 	}
-	return true, nil
+	return nil
 }

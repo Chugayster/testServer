@@ -3,7 +3,6 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -60,16 +59,9 @@ func (c *EventController) FindOne() http.HandlerFunc {
 			}
 			return
 		}
-		if event != nil {
-			err = success(w, event)
-			if err != nil {
-				fmt.Printf("EventController.FindOne(): %s", err)
-			}
-		} else {
-			err = notFound(w)
-			if err != nil {
-				fmt.Printf("EventController.FindOne(): %s", err)
-			}
+		err = success(w, event)
+		if err != nil {
+			fmt.Printf("EventController.FindOne(): %s", err)
 		}
 	}
 
@@ -77,16 +69,13 @@ func (c *EventController) FindOne() http.HandlerFunc {
 
 func (c *EventController) DbUpdate() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			log.Println("Wrong DbUpadate post", err)
-		}
 		var updateEvent event.Event
-		err = json.Unmarshal(body, &updateEvent)
+		err := json.NewDecoder(r.Body).Decode(&updateEvent)
 		if err != nil {
 			log.Println("Json read", err)
+			return
 		}
-		id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+		updateEvent.Id, err = strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 		if err != nil {
 			fmt.Printf("EventController.DbUpdate()): %s", err)
 			err = internalServerError(w, err)
@@ -95,7 +84,7 @@ func (c *EventController) DbUpdate() http.HandlerFunc {
 			}
 			return
 		}
-		event, err := (*c.service).DbUpdate(id, &updateEvent)
+		event, err := (*c.service).DbUpdate(&updateEvent)
 		if err != nil {
 			fmt.Printf("EventController.DbUpdate(): %s", err)
 			err = internalServerError(w, err)
@@ -104,29 +93,17 @@ func (c *EventController) DbUpdate() http.HandlerFunc {
 			}
 			return
 		}
-		if event != nil {
-			err = success(w, event)
-			if err != nil {
-				fmt.Printf("EventController.Dbupdate(): %s", err)
-			}
-		} else {
-			err = notFound(w)
-			if err != nil {
-				fmt.Printf("EventController.Dbupdate(): %s", err)
-			}
+		err = success(w, event)
+		if err != nil {
+			fmt.Printf("EventController.Dbupdate(): %s", err)
 		}
-
 	}
 }
 
 func (c *EventController) DbCreated() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			log.Println("Wrong DbCreate post", err)
-		}
 		var createEvent event.Event
-		err = json.Unmarshal(body, &createEvent)
+		err := json.NewDecoder(r.Body).Decode(&createEvent)
 		if err != nil {
 			log.Println("Json read", err)
 		}
@@ -157,7 +134,7 @@ func (c *EventController) DbDelete() http.HandlerFunc {
 			}
 			return
 		}
-		status, err := (*c.service).DbDelete(id)
+		err = (*c.service).DbDelete(id)
 		if err != nil {
 			fmt.Printf("EventController.DbDelete(): %s", err)
 			err = internalServerError(w, err)
@@ -166,17 +143,10 @@ func (c *EventController) DbDelete() http.HandlerFunc {
 			}
 			return
 		}
-		if status {
-			err = delete(w, fmt.Sprintf("id %d is deleted", id))
-			if err != nil {
-				fmt.Printf("EventController.DbDelete(): %s", err)
-			}
-		} else {
-			err = notFound(w)
-			if err != nil {
-				fmt.Printf("EventController.Dbupdate(): %s", err)
-			}
-
+		err = delete(w, fmt.Sprintf("id %d is deleted", id))
+		if err != nil {
+			fmt.Printf("EventController.DbDelete(): %s", err)
 		}
+
 	}
 }
